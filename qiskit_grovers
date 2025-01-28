@@ -1,0 +1,45 @@
+# Grover's Algorithm in Qiskit
+# Author: Cooter McGrew
+
+from qiskit import QuantumCircuit, Aer, execute
+from qiskit.circuit.library import GroverOperator
+from qiskit.algorithms import Grover
+from qiskit.visualization import plot_histogram
+import matplotlib.pyplot as plt
+
+# Define the oracle for Grover's Algorithm
+# Example: A simple oracle where |11> is the solution.
+def create_oracle():
+    oracle = QuantumCircuit(2)
+    oracle.cz(0, 1)  # Flip the phase for |11>
+    return oracle
+
+# Initialize the quantum circuit for Grover's algorithm
+def grover_algorithm():
+    num_qubits = 2
+    oracle = create_oracle()
+    
+    # Create Grover Operator
+    grover_op = GroverOperator(oracle)
+
+    # Create a quantum circuit with Grover's operator
+    qc = QuantumCircuit(num_qubits)
+    qc.h(range(num_qubits))  # Apply Hadamard to all qubits
+    qc.append(grover_op, range(num_qubits))  # Apply Grover operator
+    qc.measure_all()  # Measure all qubits
+
+    return qc
+
+# Simulate the circuit
+def simulate_grover():
+    qc = grover_algorithm()
+    simulator = Aer.get_backend('qasm_simulator')
+    result = execute(qc, simulator, shots=1024).result()
+    counts = result.get_counts()
+
+    print("Result:", counts)
+    plot_histogram(counts)
+    plt.show()
+
+if __name__ == "__main__":
+    simulate_grover()
