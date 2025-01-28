@@ -1,0 +1,48 @@
+# Quantum Fourier Transform (QFT) in Qiskit
+# Author: Cooter McGrew
+
+from qiskit import QuantumCircuit, Aer, execute
+from qiskit.visualization import plot_histogram
+import matplotlib.pyplot as plt
+
+# Function to apply a controlled phase rotation
+def apply_cp(qc, control, target, angle):
+    qc.cp(angle, control, target)
+
+# Function to create a Quantum Fourier Transform circuit
+def qft(n):
+    qc = QuantumCircuit(n)
+    for qubit in range(n):
+        qc.h(qubit)  # Apply Hadamard gate
+        for target in range(qubit + 1, n):
+            angle = 2 * 3.14159 / (2 ** (target - qubit + 1))
+            apply_cp(qc, target, qubit, angle)  # Apply controlled phase rotation
+    
+    # Reverse qubit order with SWAP gates
+    for qubit in range(n // 2):
+        qc.swap(qubit, n - qubit - 1)
+
+    return qc
+
+# Test QFT with a simple example
+if __name__ == "__main__":
+    num_qubits = 3
+
+    # Prepare an example input state
+    qc = QuantumCircuit(num_qubits)
+    qc.x(0)  # Example: Set the first qubit to |1>
+    qc.barrier()
+
+    # Apply the QFT circuit
+    qft_circuit = qft(num_qubits)
+    qc.compose(qft_circuit, inplace=True)
+    qc.measure_all()
+
+    # Simulate the QFT circuit
+    simulator = Aer.get_backend('qasm_simulator')
+    result = execute(qc, simulator, shots=1024).result()
+    counts = result.get_counts()
+
+    print("QFT Result:", counts)
+    plot_histogram(counts)
+    plt.show()
