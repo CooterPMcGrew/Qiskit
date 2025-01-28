@@ -1,0 +1,50 @@
+# Variational Quantum Eigensolver (VQE) in Qiskit
+# Author: Cooter McGrew
+
+from qiskit import Aer, QuantumCircuit, execute
+from qiskit.algorithms.optimizers import COBYLA
+from qiskit.circuit import Parameter
+from qiskit.opflow import X, Z, I, StateFn, AerPauliExpectation, CircuitSampler
+import numpy as np
+
+# Define a Hamiltonian: Example for H = ZI + IZ + XX
+hamiltonian = (Z ^ I) + (I ^ Z) + (X ^ X)
+
+# Define a variational ansatz circuit
+def variational_ansatz(params):
+    qc = QuantumCircuit(2)
+    qc.ry(params[0], 0)
+    qc.ry(params[1], 1)
+    qc.cx(0, 1)
+    return qc
+
+# Define the objective function
+def vqe_objective(params):
+    ansatz = variational_ansatz(params)
+    measurable_expression = StateFn(hamiltonian, is_measurement=True) @ StateFn(ansatz)
+
+    # Set up the expectation value computation
+    backend = Aer.get_backend('statevector_simulator')
+    sampler = CircuitSampler(backend).convert(measurable_expression)
+    expectation = AerPauliExpectation().convert(sampler)
+    value = np.real(expectation.eval())
+    return value
+
+# Run the VQE algorithm
+def run_vqe():
+    # Initial parameters for optimization
+    initial_params = np.random.rand(2)
+
+    # Define optimizer
+    optimizer = COBYLA(maxiter=100, tol=1e-3)
+
+    # Optimize the parameters
+    result = optimizer.optimize(
+        num_vars=2, objective_function=vqe_objective, initial_point=initial_params
+    )
+
+    print("Optimized Parameters:", result[0])
+    print("Minimum Energy Found:", result[1])
+
+if __name__ == "__main__":
+    run_vqe()
